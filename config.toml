@@ -1,0 +1,66 @@
+baseurl = "https://example.com/"
+title = "Introduction to Tidy Data Analysis and PUMS"
+theme = "ghostwriter"
+languageCode = "en-us"
+copyright = "Jamaal Green"
+disqusShortname = ""
+googleAnalytics = ""
+ignoreFiles = ["\\*.Rmd$", "\\*.Rmarkdown$", "_files$", "_cache$"]
+
+[Privacy]
+
+[Privacy.disqus]
+    disable = true
+
+[Privacy.googleAnalytics]
+    anonymizeIP = true
+    respectDoNotTrack = true
+    useSessionStorage = false
+
+[Author]
+    name = "Jamaal Green"
+    profile = "https://github.com/jamgreen"
+
+[Taxonomies]
+    tag = "tags"
+
+[Params]
+    intro = true
+    headline = "Ghostwriter example"
+    description = "Ghostwriter example description"
+    github = "https://github.com/jamgreen"
+    linkedin = "https://linkedin.com/in/XXX/"
+    twitter = "https://twitter.com/surlyurbanist"
+    stackoverflow = "https://stackoverflow.com/users/2544398/elmuertefurioso"
+    email = "jamgreen@pdx.edu"
+    opengraph = true
+    shareTwitter = true
+    shareFacebook = false
+    shareGooglePlus = false
+    shareLinkedIn = false
+    dateFormat = "Mon, Jan 2, 2006"
+    highlightJsUrl = ""
+    highlightJsLocalUrl = ""
+
+[Permalinks]
+    post = "/:year/:month/:day/:filename/"
+
+[[menu.main]]
+    name = "Day 1"
+    url = "/day1/"
+    weight = 1
+
+[[menu.main]]
+    name = "Day 2"
+    url = "/day2/"
+    weight = 2
+
+[[menu.main]]
+    name = "Contact"
+    url = "/page/contact/"
+    weight = 3
+
+[[menu.main]]
+    name = "About"
+    url = "/page/about/"
+    weight = 4
