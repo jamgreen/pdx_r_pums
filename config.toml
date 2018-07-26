@@ -52,7 +52,7 @@ ignoreFiles = ["\\*.Rmd$", "\\*.Rmarkdown$", "_files$", "_cache$"]
     
 [[menu.main]]
     name = "Home"
-    url = "/"
+    url = "/post/"
     weight = 1
     identifier = "home"
 
