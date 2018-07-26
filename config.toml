@@ -51,10 +51,9 @@ ignoreFiles = ["\\*.Rmd$", "\\*.Rmarkdown$", "_files$", "_cache$"]
     post = "/:year/:month/:day/:filename/"
     
 [[menu.main]]
-    name = "Home"
-    url = "/post/"
+    name = "Blog"
+    url = "/"
     weight = 1
-    identifier = "home"
 
 [[menu.main]]
     name = "Day 1"
