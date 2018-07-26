@@ -1,4 +1,4 @@
-baseurl = "/"
+baseurl = "https://nostalgic-beaver-fed015.netlify.com/"
 title = "Introduction to Tidy Data Analysis and PUMS"
 theme = "ghostwriter"
 languageCode = "en-us"
@@ -39,8 +39,13 @@ ignoreFiles = ["\\*.Rmd$", "\\*.Rmarkdown$", "_files$", "_cache$"]
     shareGooglePlus = false
     shareLinkedIn = false
     dateFormat = "Mon, Jan 2, 2006"
-    highlightJsUrl = ""
-    highlightJsLocalUrl = ""
+    highlightjsVersion = "9.11.0"
+    highlightjsCDN = "//cdn.bootcss.com"
+    highlightjsLang = ["r", "yaml"]
+    highlightjsTheme = "github"
+
+    MathJaxCDN = "//cdn.bootcss.com"
+    MathJaxVersion = "2.7.1"
 
 [Permalinks]
     post = "/:year/:month/:day/:filename/"
