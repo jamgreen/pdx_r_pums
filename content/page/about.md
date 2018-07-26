@@ -1,14 +1,16 @@
 +++
 title = "About"
-date = 2015-04-03T02:13:50Z
-author = "My Name"
+date = 2018-07-26
+author = "Jamaal Green"
 description = "Things about me."
 +++
 
 ## About
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean nec dolor in magna lobortis egestas. Suspendisse eu erat tempor, tristique neque eu, convallis nulla. Curabitur vel bibendum lacus, at semper mauris. Suspendisse aliquet commodo ex, sed sagittis metus aliquam id. Maecenas feugiat rutrum lorem vel imperdiet. Nullam ornare lectus ut enim finibus, et porttitor mi tincidunt. Aenean lacinia, leo quis vehicula eleifend, quam libero sagittis erat, at euismod augue mauris et sapien. Sed id vehicula lectus, sit amet auctor ipsum. Nunc sed massa vel ex condimentum aliquam in a enim. Cras enim sem, tristique eu enim ac, congue commodo mi. Integer quis orci at dolor blandit eleifend.
+This site is a landing page and resource for participants in our two-day workshop introducing R, the tidyverse and census public use microdata to analysts from the city of Portland and students/faculty/staff from Portland State University.
 
-## School
+We hope this website can act as a continual resource for workshop participants or curious viewers who are just learning R or census microdata.
 
-Sed quis pulvinar nisi, sed dapibus lacus. Mauris tempus ex ut ipsum facilisis interdum. Integer feugiat urna sed feugiat tempor. Quisque dictum vestibulum feugiat. Nunc nec est volutpat lorem imperdiet egestas sit amet ut orci. Aliquam venenatis neque ipsum, a placerat lectus cursus at. Donec pellentesque tellus hendrerit faucibus posuere. Etiam gravida consequat lectus, volutpat consectetur velit convallis nec. Praesent sagittis luctus dignissim.
+## The Hose
+
+The workshop was held at Portland State University and hosted by the [Population Research Center](https://www.pdx.edu/prc/home). We have nearly 2 dozen participants from multiple City of Portland departments (including but not limited to the [Bureau of Planning and Sustainability](https://www.portlandoregon.gov/bps/) and the [Portland Housing Bureau](https://www.portlandoregon.gov/phb/)) as well as analysts from multiple departments from the State of Oregon such as the [Oregon Office of Economic Analysis](https://www.oregon.gov/das/OEA/Pages/Index.aspx). Portland, in particular, is a hotbed of open source development and innovation and we at Portland State are happy to introduce R to a new set of analysts and users in the public sector in service to our university's mission to "Let Knowledge Serve the City."

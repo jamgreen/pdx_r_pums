@@ -1,4 +1,4 @@
-baseurl = "https://example.com/"
+baseurl = "/"
 title = "Introduction to Tidy Data Analysis and PUMS"
 theme = "ghostwriter"
 languageCode = "en-us"
@@ -26,8 +26,8 @@ ignoreFiles = ["\\*.Rmd$", "\\*.Rmarkdown$", "_files$", "_cache$"]
 
 [Params]
     intro = true
-    headline = "Ghostwriter example"
-    description = "Ghostwriter example description"
+    headline = "Tidy Data Analysis and PUMS"
+    description = "A pragmatic approach and introduction to the tidyverse and census microdata"
     github = "https://github.com/jamgreen"
     linkedin = "https://linkedin.com/in/XXX/"
     twitter = "https://twitter.com/surlyurbanist"

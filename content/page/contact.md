@@ -1,10 +1,14 @@
 +++
 title = "Contact"
-date = 2015-04-03T02:13:50Z
-author = "My Name"
-description = "How to contact me."
+date = 2018-07-26
+author = "Jamaal Green"
+description = "How to contact us."
 +++
 
 ## Contact
 
-Aenean ipsum justo, semper eu nisl ut, pretium tincidunt sem. Praesent et diam sit amet lacus lobortis dictum a id lacus. Quisque hendrerit sit amet turpis eu varius. Ut id lorem ac felis ultrices tincidunt. Pellentesque consequat arcu ac fringilla imperdiet. Phasellus pellentesque, sapien non pulvinar blandit, sapien ante aliquet felis, vel porttitor sapien ante in lacus. Fusce non urna aliquet, malesuada nibh vel, luctus urna. Phasellus ut lacus molestie, varius purus quis, malesuada lorem.
+You can reach me, Jamaal Green, at my PSU university account: jamgreen@pdx.edu
+
+Nicholas Chun at the Population Research Center can be contacted at: nicchun@pdx.edu
+
+Finally, Nick Kobel, economic planner at the city of Portland can be contacted at: nick.kobel@portlandoregon.gov
