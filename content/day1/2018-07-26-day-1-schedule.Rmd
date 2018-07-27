@@ -1,0 +1,30 @@
+---
+title: Day 1 Schedule
+author: Jamaal Green
+date: '2018-07-26'
+slug: day-1-schedule
+categories: []
+tags: []
+description: ''
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+if(!require(pacman)){install.packages("pacman"); library(pacman)}
+p_load(tibble, pander, knitr, kable, kableExtra)
+
+
+sched <- tribble(~Time, ~Goals, ~Materials, ~Data,
+                 "9-10am", "Intro and address any tech issues, talking data types", 
+                 paste0('[Data Types in R]','(static/data/data_type.pdf)'), NA,
+                 "10:15-12:00pm", "Input/Output and Intro to Tidyverse", NA, 
+                 paste0('[Excel Master Sheet]','(static/data/DataSetsForPSUWorkshop.xlsx)'),
+                 "1:00-2:15pm", "Tidyverse cont.", NA, paste0('[Excel Master Sheet]','(static/data/DataSetsForPSUWorkshop.xlsx)'),
+                 "2:30 onward", "Free play", NA, NA)
+
+kable(sched) %>% 
+  kable_styling(bootstrap_options = c("striped", "hover"))
+
+
+```
+
