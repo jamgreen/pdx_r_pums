@@ -1,5 +1,5 @@
 ---
-title: Day 1 Schedule
+title: "Day 1 Schedule"
 author: Jamaal Green
 date: '2018-07-26'
 slug: day-1-schedule
