@@ -31,7 +31,7 @@ kable(sched) %>%
 
 ##Workshop Data
 
-[Workshop Excel Sheet of Doom](../DataSetsForPSUWorkshop.xlsx)
+[Workshop Excel Sheet of Doom](DataSetsForPSUWorkshop.xlsx)
 
 ##Materials
 
