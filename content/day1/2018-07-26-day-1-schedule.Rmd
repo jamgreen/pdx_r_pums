@@ -5,7 +5,7 @@ date: 2018-07-26
 slug: day-1-schedule
 categories: []
 tags: []
-description: "Day 1 Schedule"
+description: "Getting Started"
 
 ---
 
@@ -35,4 +35,4 @@ kable(sched) %>%
 
 ##Materials
 
-[Data Types in R](static/data/data_type.pdf)
+[Data Types in R](../data_types_intro.pdf)
