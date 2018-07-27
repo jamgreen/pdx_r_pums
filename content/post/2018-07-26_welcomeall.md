@@ -1,5 +1,5 @@
 +++
-title = "Almost There"
+title = "It's Almost Time!"
 author = "Jamaal Green"
 date = 2018-07-26
 categories = ["R"]
