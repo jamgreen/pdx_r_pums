@@ -1,10 +1,10 @@
 +++
-title: "Almost There"
-author: "Jamaal Green"
-date: 2018-07-26
-output: html_document
-categories: ["R"]
-TAGS: ["R markdown"]
+title = "Almost There"
+author = "Jamaal Green"
+date = 2018-07-26
+output = html_document
+categories = ["R"]
+tags = ["R markdown"]
 +++
 
 
