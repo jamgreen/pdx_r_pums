@@ -5,7 +5,7 @@ date: 2018-07-26
 slug: day-1-schedule
 categories: []
 tags: []
-description: 'Day 1 Schedule'
+description: "Day 1 Schedule"
 
 ---
 
