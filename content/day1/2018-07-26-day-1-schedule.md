@@ -42,7 +42,7 @@ output:
 
 ##Workshop Data
 
-[Workshop Excel Sheet of Doom](DataSetsforPSUWorkshop.xlsx)
+[Workshop Excel Sheet of Doom](DataSetsForPSUWorkshop.xlsx)
 
 ##Materials
 
