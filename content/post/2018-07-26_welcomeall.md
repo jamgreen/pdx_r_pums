@@ -1,15 +1,13 @@
----
++++
 title: "Almost There"
 author: "Jamaal Green"
 date: 2018-07-26
 output: html_document
 categories: ["R"]
 TAGS: ["R markdown"]
----
++++
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+
 
 We are a little less than one week away from the workshop and I just wanted to welcome you in a brief blog post.
 
