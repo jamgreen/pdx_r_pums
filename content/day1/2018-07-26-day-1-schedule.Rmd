@@ -6,6 +6,9 @@ slug: day-1-schedule
 categories: []
 tags: []
 description: ''
+output:
+  html_document:
+    keep_md:  TRUE
 ---
 
 ##Tentative Schedule
@@ -13,7 +16,7 @@ description: ''
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 if(!require(pacman)){install.packages("pacman"); library(pacman)}
-p_load(tibble, pander, knitr, kable, kableExtra)
+p_load(tibble, pander, knitr, kableExtra)
 
 
 sched <- tribble(~Time, ~Goals,
@@ -29,7 +32,8 @@ kable(sched) %>%
 ```
 
 ##Workshop Data
-[Workshop Excel Sheet of Doom](data/DataSetsForPSUWorkshop.xlsx)
+
+[Workshop Excel Sheet of Doom](/DataSetsForPSUWorkshop.xlsx)
 
 ##Materials
 
