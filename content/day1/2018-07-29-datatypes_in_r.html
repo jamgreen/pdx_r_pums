@@ -1,0 +1,91 @@
+---
+title: "Basic Data Types and Syntax in R"
+subtitle: "PSU R and PUMS Workshop"
+author: "Jamaal Green"
+date: 2018-07-29
+output:
+  tufte::tufte_handout:
+    citation_package: natbib
+    latex_engine: xelatex
+  tufte::tufte_html: default
+  tufte::tufte_book:
+    citation_package: natbib
+    latex_engine: xelatex
+---
+
+
+
+<div id="the-basics" class="section level1">
+<h1>The Basics</h1>
+<p>This sheet is to provide some minimal introductory knowledge for brand new beginners and to get us acquainted with the idea of <a href="http://r4ds.had.co.nz/explore-intro.html"><em>tidy</em></a> data from Hadley Wickham. We will try not to get bogged down into too much unnecessary detail here but we want to introduce (briefly) some of the basic data types in R, assignment and calling functions.</p>
+<p>We can use R as a simple calculator by jsut type expressions into our consoles:</p>
+<pre class="r"><code>1 + 200/3</code></pre>
+<pre><code>## [1] 67.66667</code></pre>
+<pre class="r"><code>(12 + 35 + 98)/4 * 5</code></pre>
+<pre><code>## [1] 181.25</code></pre>
+<p>We create new objects using the <code>&lt;-</code> operator.</p>
+<pre class="r"><code>my_first_object &lt;- 7 *4
+
+my_first_object</code></pre>
+<pre><code>## [1] 28</code></pre>
+<p>The basic structure for making an object is <code>object_name &lt;- value</code>. For those of you coming from other languages you may wonder why R does not use <code>=</code> for assignment. Well, you can, but it is generally considered better practice to stay with the <code>&lt;-</code> especially when you start designing your own functions.</p>
+<p>Finally, in R we are constantly calling <strong>functions</strong>, pre-defined bits of code that allow us to perform all kinds of operations. The general structure for function calls is thus:</p>
+<p><code>function_name(arg1 = value1, arg2 = value2...)</code></p>
+</div>
+<div id="data-types-in-r" class="section level1">
+<h1>Data Types in R</h1>
+<p>The basic data type in R is the vector. Of vectors there are two types:</p>
+<ol style="list-style-type: decimal">
+<li><strong>Atomic vectors</strong>- these vectors can be of six types logical, integer, double, character, complex and raw. Integer and double vectors are commonly referred as <em>numeric</em> vectors.</li>
+<li><strong>Lists</strong>- also referred to as recursive vectors because they can hold other lists</li>
+</ol>
+<p>The main difference between atomic vectors and lists, aside from the recursive nature of lists, is that vectors are homogenous while lists are heterogeneous. This means that numeric vectors hold only numeric values. If any other value is introduced, like a character, then the entire vector will be converted to a character vector, because that is the most flexible data type out of all the values.</p>
+<pre class="r"><code># we use the c() command to start a vector
+
+vec1 &lt;- c(4, 89, 91837, 19)
+
+class(vec1)</code></pre>
+<pre><code>## [1] &quot;numeric&quot;</code></pre>
+<pre class="r"><code>#note the addition of a character 
+
+vec2 &lt;- c(4, 89, 91837, 19, &quot;a&quot;)
+
+class(vec2)</code></pre>
+<pre><code>## [1] &quot;character&quot;</code></pre>
+<pre class="r"><code>#we use list() to start a list
+
+list_1 &lt;- list(4, 89, 91837, 19)
+
+class(list_1)</code></pre>
+<pre><code>## [1] &quot;list&quot;</code></pre>
+<pre class="r"><code>list_2 &lt;- list(4, 89, 91837, 19, &quot;a&quot;)
+
+class(list_2)</code></pre>
+<pre><code>## [1] &quot;list&quot;</code></pre>
+<p>Note how an object of class list remains a list regardless of the objects in it. While we will not focus deeply on this question, do note that you can navigate vectors using indexing like this:</p>
+<pre class="r"><code>#what is the third element of vec_1?
+
+vec1[3]</code></pre>
+<pre><code>## [1] 91837</code></pre>
+<pre class="r"><code>#what is the first element of vec_2?
+
+vec2[1]</code></pre>
+<pre><code>## [1] &quot;4&quot;</code></pre>
+<p>Again, we won’t dwell on this but it is important to understand the differences between vectors and lists because the workhorse of our data analysis workflows, the dataframe, is a special form of list that combines multiple vectors of the same <em>length</em> into what we commonly recognize as a two dimensional table.</p>
+</div>
+<div id="the-dataframe-tibble-and-tidy-data" class="section level1">
+<h1>The Dataframe, Tibble and Tidy Data</h1>
+<p>The dataframe will be the data object you work with throughout most of your R workflows. You can think of it, if it helps, as a rough equivalent of a well formatted excel worksheet. A dataframe has <strong>columns</strong> and <strong>rows</strong>. Dataframe columns are of one of the types of vectors (just look up the page if you can’t remember) and, because a dataframe is a special kind of list, dataframe columns can also hold <em>lists</em>. This kind of abstraction can make programming very powerful, but it can be a difficult concept to wrap your head around at first so this is all we will say on it.</p>
+<div id="tidy-data" class="section level2">
+<h2>Tidy Data</h2>
+<p>“Tidy” data is a concept developed by Hadley Wickham to describe a particular way of organizing data in a table format. Again, the basic idea is that variables are held in columns, observations in rows, and each cell accounts for a singular value. For those of you familiar with databases, this is essentially what we get when discussing “long data”.</p>
+<div class="figure">
+<img src="tidy-1.png" alt="Tidy Data, courtesy of Wickham and Grolemund" />
+<p class="caption">Tidy Data, courtesy of <a href="http://r4ds.had.co.nz/tidy-data.html">Wickham and Grolemund</a></p>
+</div>
+</div>
+</div>
+<div id="r-projects-and-working-directories" class="section level1">
+<h1>R Projects and Working Directories</h1>
+<p>Before we start on a new analytical project we have to set a working directory. A working directory is a folder that R will look into when you attempt to import or export files. Traditionally, we can use the <code>setwd(&lt;path to folder&gt;)</code> to set a working directory or, in RStudio, click Session -&gt; Set Working Directory -&gt; Choose Directory. Setting a working directory allows you to use relative path names when calling for files as opposed to absolute paths. An easier way to keep track of your directories without having to include setwd() at the beginning of all of your scripts is to use R projects. R projects are a format developed at RStudio that create a self-contained project directory. So, for all files that exist within that project directory, you can reference them relative to the home folder. R projects make keep track of directories simple and give us a basic organizing piece for a data project. If you have a new project, create a new R project, move your files into it and work from there. Additionally, tanks to better integration of R with different version control applications, you can use R projects with git/GitHub, creating an easy way to share your work without having to worry about paths breaking down.</p>
+</div>
