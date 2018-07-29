@@ -1,8 +1,10 @@
 ---
 title: "Input/Output in R"
-author: "Jamaal Green"
+author: Jamaal Green
 date: "`r Sys.time()`"
 output: html_document
+slug: input-output
+description: "Input, Output and RDS"
 ---
 
 ```{r setup, include=FALSE}
