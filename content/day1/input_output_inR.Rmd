@@ -1,0 +1,103 @@
+---
+title: "Input/Output in R"
+author: "Jamaal Green"
+date: "`r Sys.time()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Your New Swiss Army Knife
+
+One of R's more underrated strengths is that it can import, and export, a dizzying array of file types, and even has some native file types of its own that help to maximize saving space on your computer while optimizing read and write speeds. As such, R can be a very useful tool when dealing with weird/outdated (dBase, anyone?) or simply non-compatible data types.
+
+We will be covering a few approaches to I/O issues in R with the [**rio**](https://cran.r-project.org/web/packages/rio/vignettes/rio.html) package. **rio** is a convenient wrapper of a bunch of other I/O oriented packages that abstracts most of your calls to either import() or export() calls. While using some of the other packages allows for increased flexibility, **rio** is an excellent starting point for reading in most any kind of text data, including, but not limited to, command and tab-delimited files, excel files and proprietary data formats like .sav and SAS binary files. Aside from its flexibility, **rio** also offers additional convenient features from the ability to import or export compressed files without necessary decompression first, web-based import, smart recognition of file type even if it lacks a file extension but the user knows the form and is type-consistent always returing a data frame on import. 
+
+Now let's work an example.
+
+##rio and excel
+
+The scenario: you receive an excel spreadsheet with data on individual worksheets. You've already visually inspected the sheet to get an idea of what the underlying format of the data is and not you need to get it into a workable format so you can start your analysis or so you can forward it to another team member who needs it cleaned up. 
+
+If you haven't already, download this [excel file](DataSetsforPSUWorkshop.xlsx) (courtesy of Josh Lehner). We will extract the the annual video lottery sales data from the first worksheet. Note that the first three rows are given for the title of the sheet and some metadata. We don't want this so we have to figure out how to everything after those rows. Fortunately, **rio** imports both the **openxlsx** and **readxl** packages. So, we will use the import() call from **rio** but add some additional parameters from the excel-specific packages that **rio** depends upon.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+install.packages(c("rio", "here"), repos = "http://cran.rstudio.com/")
+library(rio)
+library(here)
+
+lotto <- import(here("content/day1/DataSetsforPSUWorkshop.xlsx"), which = 1, skip = 3)
+
+export(lotto, here("content/day1/lotto.csv"))
+
+
+```
+
+Let's walk through what we did here. We dida quick visual inspection of the worksheet and saw that the first thtree rows were reserved for a title and brief metadata of the sheet but everything else was the actual data content we wanted, including our column headers. First, we installed the **rio** and the **here** packages (the *here* package makes it easier to use relative paths to our files, if you don't understand this yet that's fine, it's just here for convenience). After installing, we called the library() function to load our packages (note, in order to use the functions available in a package you must call library() for that package, assuming it is already installed). Finally, after making a quick visual inspection of of our data frame, we export to a csv for easier use in the future. 
+
+This was clearly a simplified example, our excel data was already well organized and formatted logically, making it relatively easy to import. But do notice that the steps we took are basically the same of what you have to do in even more complicated settings, identify the file, try and recognize the pattern that allows us to import the data we need and then export to a more useful format. Also note that we didn't do anything to the data after we imported it such as making column names more R friendly or runnning any summary statistics or anything. But, already, we can see a potentially powerful use for R as an ultra-flexible tool for transforming our datasets into different formats.
+
+##A bit more complicated
+
+Our first example was fairly straightforward, now let's make something a little more difficult. Open your excel spreadsheet and take a look at the "ODOT Crashes" sheet. We have separate sections for each year and total rows within our data sections. Fortunately, there are not too many sections so we do not have to work through a particularly complex programmatic approach to importing this data, but this will still require some trickier work with our import commands. Additionally, we will be making use of some of our first **dplyr** commands to rename our columns and to add a year column.
+
+```{r echo=TRUE, message=FALSE, warning=FALSE}
+
+#a little convenience script that checks to see if a package is installed and
+#then loads it up for you
+
+if(!require(pacman)){install.packages("pacman"); library(pacman)}
+p_load(rio, here, dplyr)
+
+#import our crash data for each year
+
+crash2014 <- import(here("content/day1/DataSetsforPSUWorkshop.xlsx"), which = 4, 
+                    range = "A7:O41", col_names = FALSE) %>% 
+  mutate(YEAR = 2014)
+
+crash2013 <- import(here("content/day1/DataSetsforPSUWorkshop.xlsx"), which = 4, 
+                    range = "A50:O85", col_names = FALSE) %>% 
+  mutate(YEAR = 2013)
+
+crash2012 <- import(here("content/day1/DataSetsforPSUWorkshop.xlsx"), which = 4, 
+                    range = "A92:O127", col_names = FALSE) %>% 
+  mutate(YEAR = 2012)
+
+crash2011 <- import(here("content/day1/DataSetsforPSUWorkshop.xlsx"), which = 4, 
+                    range = "A134:O169", col_names = FALSE) %>% 
+  mutate(YEAR = 2011)
+
+crash2010 <- import(here("content/day1/DataSetsforPSUWorkshop.xlsx"), which = 4, 
+                    range = "A179:O214", col_names = FALSE) %>% 
+  mutate(YEAR = 2010)
+
+#create one tall table and rename columns
+
+crashes <- bind_rows(crash2010, crash2011, crash2012, crash2013, crash2014)
+
+crashes <- crashes %>% 
+  rename(COUNTY = X__1, FATAL = X__2, NON_FATAL = X__3, PROP_DAMAGE = X__4, TOT_CRASH = X__5,
+         FATALITIES = X__6, INJURIES = X__7, TRUCKS = X__8, DRY_SURF = X__9, WET_SURF = X__10,
+         DAY = X__11, DARK = X__12, INTERSECTION = X__13, INTER_RELATED = X__14,
+         OFFROAD = X__15)
+
+head(crashes)
+
+export(crashes, here("content/day1/crashes.csv"))
+
+```
+
+So, what did we do here? We set the specific ranges of our data of interest from the spreadsheet and assigned each year to its own object. Additionally, we used the mutate() command from **dplyr** to create a new column, 'YEAR', where we assigned the year. Then we used the bind_rows() function, also from **dplyr**, to row bind (stack our data frames on top of each other) our individual data frame objects into one large crashes data frame, and then we used the rename() function, also from **dplyr** to give our columns more informative names.
+
+I hope this example shows how you can take a straightforward set of commands and be able to do some relatively sophisticated data transformations with relatively little syntax. More experienced programmers can rightly quibble with some of this code as being inefficient, but for a simpler example like this, going through each step makes it easier for non-specialists to see the logic of your code, and it makes it clear where in our little script we could better optimize our code. But for now, this is pretty good, and, most importantly, it solves our problem in a timely and reproducible fashion *without ever modifying the original excel workbook*.
+
+Finally, you may be wondering about the `%>%` symbol. This is called a 'pipe' and is taken from the **magrittr** package. It allows you to take an object from the left of it and 'pipe' it into another function without having to call that object explicitly. It allows for the easy chaining of functions on a particular dataset and is one of the most powerful innovations of the tidyverse. We will be diving deeper into the tidyverse, particularly **dplyr**, in our next section to get an idea of what it can really do. 
+
+##The RDS File
+
+Thus far, we've been working with relatively small excel and text files. Our computers can handle such files easily but as files get bigger it can be harder for our machines, and R, to handle them. Most of you are probably familiar with basic file compression formats like *.zip files. Such files compress data into a binary format that can give us major memory savings.
+
+R has its own binary file format, the RDS format. The strengths of the RDS are myriad. First, as a binary format, RDS files are automatically compressed, and can give you major memory savings for especially large datasets. Additionally, as a native R format, RDS files have especially fast read and write capability. As many of you may know, it not only takes a long time to read a file but it can take a long time to save one also. RDS files are one solution for these larger file formats. If you do not have to share your analysis files with people not using R, RDS files are a very efficient file format for keeping your analysis files in. The basic syntax for such files are `saveRDS(object, file = "<filename>.RDS")` and to read the file back `new_object_name <- readRDS("<filename>.RDS")`.

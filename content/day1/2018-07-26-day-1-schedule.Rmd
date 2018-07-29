@@ -35,4 +35,4 @@ kable(sched) %>%
 
 ##Materials
 
-[Data Types in R](../data_types_intro.pdf)
+[Data Types in R](data_types_intro.pdf)
