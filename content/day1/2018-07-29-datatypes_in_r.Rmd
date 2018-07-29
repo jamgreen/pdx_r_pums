@@ -109,7 +109,7 @@ The dataframe will be the data object you work with throughout most of your R wo
 
 "Tidy" data is a concept developed by Hadley Wickham to describe a particular way of organizing data in a table format. Again, the basic idea is that variables are held in columns, observations in rows, and each cell accounts for a singular value. For those of you familiar with databases, this is essentially what we get when discussing "long data".
 
-![Tidy Data](tidy-1.png)
+![Tidy Data](/day1/tidy-1.png)
 
 Fig. 1- Tidy data diagram taken from [Wickham and Grolemund](http://r4ds.had.co.nz/introduction.html)
 
