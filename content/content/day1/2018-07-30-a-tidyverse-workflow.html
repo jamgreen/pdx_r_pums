@@ -1,0 +1,44 @@
+---
+title: A Tidyverse workflow
+author: Jamaal Green
+date: '2018-07-30'
+slug: a-tidyverse-workflow
+categories: []
+tags: []
+description: 'Dates, times and summary stats, oh my!'
+---
+
+
+
+<p>We’ve discussed a lot of the basics and just started an introduction to the tidyverse. There is no better way to get acquainted with a fuller range of these tools than by digging into a real dataset and showcasing the power.</p>
+<p>Thus far, we’ve worked with some smaller example datasets, but now we will be working with a dataset of &gt; 1 million rows of 911 calls. Our mission is to import this data, clean it up a bit, calculate some summary statistics of interest and do some basic data visualization. At the end, we will export our newly created cleaned dataset both to a csv and RDS file so we can get an idea of the memory differences between the formats.</p>
+<div id="the-data" class="section level2">
+<h2>The Data</h2>
+<p>This is emergency call data from the <a href="https://www.portlandoregon.gov/cbo/">Budget Office of the City of Portland</a>. It has only five columsn but nearly 1.4 million rows as it has nearly 3 years of call data. Like many datasets, this data comes in an especially hefty 45MB excel file and is spread over four sheets (download <a href="%22Master%20Data_thru_June_Nick%20Kobel.xlsx%22">here</a>).</p>
+<p>Fortunately, the data is pretty well formatted already so we do not have to do extensive cleaning, but we still need to make sure our dates are in the proper format and our variables are of the proper types. Once that is done, we would like to calculate a series of summary statistics (by increasing difficulty/complexity): the total number of emergency calls; the number of emergency calls by year; the number of calls by month, by year; and the the proportion of calls by cell phone or landline by year.</p>
+<p>We will be making primarily use of the <strong>lubridate</strong> and <strong>dplyr</strong> packages for cleaning and summarizing and the <strong>rio</strong> package for importing our sheets (I’ll also be using the <strong>here</strong> package for easier calling of files, but it is not strictly necessary).</p>
+<div id="import" class="section level3">
+<h3>Import</h3>
+<p>First, we gotta these sheets into R. We’ve already done a quick visual inspection in excel so we know we don’t have any obviously apparent issues regarding columns, but note that the analysts added <code>NULL</code> in cells instead of leaving them blank. This will matter when importing because R will read <code>NULL</code> as a <strong>string</strong> and covnert every other value in that column to string. While it’s usually easy to convert column types once our data is imported if you don’t notice this it can easily mess up your analysis down the line. So, beware.</p>
+<pre class="r"><code>if(!require(pacman)){install.packages(&quot;pacman&quot;); library(pacman)}
+p_load(here, rio, lubridate, dplyr)
+
+boecxls1 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.xlsx&quot;), which = 1, na = c(&quot;&quot;, &quot;NULL&quot;)) 
+boecxls2 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.xlsx&quot;), which = 2, na = c(&quot;&quot;, &quot;NULL&quot;)) 
+boecxls3 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.xlsx&quot;), which = 3, na = c(&quot;&quot;, &quot;NULL&quot;)) 
+boecxls4 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.xlsx&quot;), which = 4, na = c(&quot;&quot;, &quot;NULL&quot;)) 
+
+boecxls &lt;- bind_rows(boecxls1, boecxls2, boecxls3, boecxls4)
+
+glimpse(boecxls)</code></pre>
+<pre><code>## Observations: 1,338,045
+## Variables: 5
+## $ call_start_dt &lt;dttm&gt; 2016-12-01 00:00:32, 2016-12-01 00:00:56, 2016-...
+## $ answer_wait   &lt;dbl&gt; 1, 2, 2, 19, 18, 1, 5, 1, 1, 17, 7, 17, 16, 0, 2...
+## $ talk_time     &lt;dbl&gt; 77, 32, 129, 11, 190, 90, 28, 0, 0, 24, 45, 90, ...
+## $ group_name    &lt;chr&gt; &quot;ACD 10 DIGIT NON-EMER&quot;, &quot;ACD 10 DIGIT NON-EMER&quot;...
+## $ cell          &lt;dbl&gt; 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, ...</code></pre>
+<p>Don’t worry too much over that beginning set of commands. That’s a little convenience snippet I have to call <strong>pacman</strong> a package management package. It’s p_load() function checks to see if a package is installed and to load it.</p>
+<p>So, we know our workbook has four sheets, the first with nearly 2 years of calls and the next three broken down monthly. In my import calls I’m pulling in each individual sheet (this should look familiar), but I’ve added a new call in the functon– the “na” argument. This is an argument that allows us to declare what values present in the sheet stand for NULLs. In this case, I said that blank cells &quot; &quot; and the string “NULL” all signify <code>NA</code>. This will help prevent any weird conversion issues from that NULl issue I mentioned above. And because the column positions and names are consistent across the sheets I use <strong>dplyr’s</strong> <code>bind_rows()</code> function to stick everything together making one tall table of calls. Finally, I use the <code>glimpse</code> function from <strong>dplyr</strong> again to get a basic idea of the columns in my data frame look like.</p>
+</div>
+</div>
