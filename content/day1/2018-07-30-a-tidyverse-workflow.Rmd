@@ -16,7 +16,7 @@ Thus far, we've worked with some smaller example datasets, but now we will be wo
 
 This is emergency call data from the [Budget Office of the City of Portland](https://www.portlandoregon.gov/cbo/). It has only five columsn but nearly 1.4 million rows as it has nearly 3 years of call data. Like many datasets, this data comes in an especially hefty 45MB excel file and is spread over four sheets (download [here]("Master Data_thru_June_Nick Kobel.xlsx")).
 
-Fortunately, the data is pretty well formatted already so we do not have to do extensive cleaning, but we still need to make sure our dates are in the proper format and our variables are of the proper types. Once that is done, we would like to calculate a series of summary statistics (by increasing difficulty/complexity): the total number of emergency calls; the number of emergency calls by year; the number of calls by month, by year; and the the proportion of calls by cell phone or landline by year.
+Fortunately, the data is pretty well formatted already so we do not have to do extensive cleaning, but we still need to make sure our dates are in the proper format and our variables are of the proper types. Once that is done, we would like to calculate a series of summary statistics (by increasing difficulty/complexity): the total number of emergency calls by month; the number of calls by month, by year; and the proportion of calls by cell phone or landline by year.
 
 We will be making primarily use of the **lubridate** and **dplyr** packages for cleaning and summarizing and the **rio** package for importing our sheets (I'll also be using the **here** package for easier calling of files, but it is not strictly necessary).
 
@@ -34,6 +34,7 @@ boecxls1 <- import(here::here("static/Master Data_thru_June_Nick Kobel.xlsx"), w
 boecxls2 <- import(here::here("static/Master Data_thru_June_Nick Kobel.xlsx"), which = 2, na = c("", "NULL")) 
 boecxls3 <- import(here::here("static/Master Data_thru_June_Nick Kobel.xlsx"), which = 3, na = c("", "NULL")) 
 boecxls4 <- import(here::here("static/Master Data_thru_June_Nick Kobel.xlsx"), which = 4, na = c("", "NULL")) 
+boecxls5 <- import(here::here("static/Master Data_thru_June_Nick Kobel.xlsx"), which = 5, na = c("", "NULL")) 
 
 boecxls <- bind_rows(boecxls1, boecxls2, boecxls3, boecxls4)
 
@@ -44,3 +45,107 @@ glimpse(boecxls)
 Don't worry too much over that beginning set of commands. That's a little convenience snippet I have to call **pacman** a package management package. It's p_load() function checks to see if a package is installed and to load it. 
 
 So, we know our workbook has four sheets, the first with nearly 2 years of calls and the next three broken down monthly. In my import calls I'm pulling in each individual sheet (this should look familiar), but I've added a new call in the functon-- the "na" argument. This is an argument that allows us to declare what values present in the sheet stand for NULLs. In this case, I said that blank cells " " and the string "NULL" all signify `NA`. This will help prevent any weird conversion issues from that NULl issue I mentioned above. And because the column positions and names are consistent across the sheets I use **dplyr's** `bind_rows()` function to stick everything together making one tall table of calls. Finally, I use the `glimpse` function from **dplyr** again to get a basic idea of the columns in my data frame look like. 
+
+###A brief foray into dates
+
+Alright, we have our dataset loaded up and combined into one large data frame. But note that the first column, the date/timestamp of the call, is not necessarily consistent for all observations. We will convert that column into a true date/time variable with the date in year-month-day format and the time going down to the seconds mark.
+
+**Lubridate** offers a series of convient functions for working with dates. In this case, all we are looking to is looking to take rather detailed timestamp data and simply add some categorical columns for making easier summary stats and visualizations. While we don't have to convert our already decently formatted dates, this example will showcase of the legibility of **lubridate's** functions and we'll see some of the first chaining of commands using the ` %>% ` operator.
+
+Some of the workhorse functions of lubridate are explicitly designed to set date/time columns in specific ways. Let's add some basic seasons going by month name. Our approach will be to make a new month column followed by a season column where we will assign season based on our month name. Now this may be a bit redundant but this will allow us to follow the logic all the way through as well as introduce us to some new operators and functions. 
+
+```{r echo=TRUE}
+#create some seasons vectors
+
+winter <- c("Dec", "Jan", "Feb")
+
+spring <- c("Mar", "Apr", "May")
+
+summer <- c("Jun", "Jul", "Aug")
+
+autumn <- c("Sep", "Oct", "Nov")
+
+#create new column called month with our month names and season column 
+
+boecxls <- boecxls %>% 
+  mutate(months = month(call_start_dt, label = TRUE),
+         season = case_when(months %in% winter ~ "Winter",
+                            months %in% spring ~ "Spring",
+                            months %in% summer ~ "Summer",
+                            months %in% autumn ~ "Autumn"))
+
+glimpse(boecxls)
+
+```
+
+Okay, let's break down what we did because there are a lot of new things here. The logic, as mentioned above, is that we define four vectors for our seasons and assign the month abbreviates to them. Remember the `c()` function allows us to declare vectors. So we start the meat of our call by starting with typing out our data frame object and feeding it into our pipe operator. This tells R to take the data frame and prepare to apply some function to it. Next we run into our one of primary **dplyr** functions `mutate()`. Mutate is used to make **new columns** in data frames in the form `mutate(<dataframe>, <new column name> = <expression>)`, of course, if you pipe your data frame in you do not need to explicitly call the data frame within mutate. Our first mutate is to create a column called months and we use the `month()` function from **lubridate** on our original date column and we want the months to be in their text form, not numeric. 
+
+The second column we're making, season, uses two new functions, `case_when()` and `%in%`. `case when` is a function designed run a series of conditional statements (in this case, a more readable version of a bunch of nested ifelse() statements). The `%in%` operator tells R to look inside a vector and to see if a particular value is found. In this case, we tell R to search the months column and if any of those values match what we have in our season columns then assign it it's appropriate season. In this case, combining `case_when` with `%in%` allows us to create a relatively complicated conditional statement into a simple, readable statement.[^1] 
+
+##Getting some summary stats
+
+Okay, we have some basic labels and we think we're ready to run some numbers. This will introduce the `group_by()` and `summarise()` functions from dplyr. Let's try it out.
+
+```{r echo=TRUE, warning=FALSE}
+
+calls_by_month <- boecxls %>% group_by(months) %>% summarise(n = n())
+
+calls_by_month
+
+calls_by_month2 <- boecxls %>% group_by(months) %>% tally()
+
+calls_by_month2
+
+all.equal(calls_by_month, calls_by_month2)
+
+```
+
+Our first question, looking at calls per month (yes, I know we have to worry about the year, we'll get to it) shows two ways to approach it. But before going into the call, look at what our calls return. Notice that **dplyr** always returns a data frame. This is one of the guiding prinicples of the tidyverse, every function should return only one kind of object. So, **dplyr** will always return a data frame even if your answer is only a single column or even a single value. Back to the call...now we're making a new object that we assign our calls_by_month name to where take our original data frame, pipe it to `group_by()` that tells **dplyr** to group our variables by some other variable, and then `summarise()` will collapse our data frame to our grouping variables and return our answer. Note that `summarise()` reduces the number of rows to the number of variables we `group_by()` as opposed to mutate that made a column on our original data frame. Finally, in our first summarise call we use the `n()` function to get a count of rows and in the second call we use the `tally()` function which is a convenience function for the very common `summarise(n = n())` command we use. You'll notice that the two resulting data frames are identical to each other. 
+
+Let's make it a bit more complicated and group by month and year. We forgot to make an additional year column, though! No fear, thanks to lubridate, we should be able to bring out the year value and group on it along with our month value. Let's try it out.
+
+```{r echo=TRUE, warning=FALSE}
+
+call_month_year <- boecxls %>% 
+  group_by(year(call_start_dt), months) %>% 
+  tally() 
+
+call_month_year
+
+call_month_year <- call_month_year %>% 
+  rename(year = `year(call_start_dt)`)
+
+call_month_year
+
+```
+
+We were still able to group by year using the lubridate year function in the grouping call! This is pretty cool (even though we have a terrible label) that allows us to get a really quick and dirty calculation even when we forget, or choose not, to create a new column. But this is easily fixed using the `rename()` function and now we have a perfectly good summary data frame. Now, let's add one more value to it, the proportion of calls by cell phone and landline and then we can start visualizing this.
+
+To get our final summary data frame we have to go back to our original table. We'll recode our cell variable from numeric to a character variable,add a year variable, then calculate our proportions. Our final table should have the month, year and the proprtion of calls made cell phone *only*. And, as an added challenge, let's see if we can do it in one call.
+
+```{r echo=TRUE, warning=FALSE}
+
+call_cell <- boecxls %>% 
+  mutate(years = year(call_start_dt),  
+         cell = if_else(cell == 1, "Cell", "Landline")) %>% 
+  group_by(months, years, cell) %>% 
+  summarise(tot_cell = n()) %>%  ungroup() %>% 
+  group_by(months, years) %>% 
+  mutate(cell_share = tot_cell/sum(tot_cell)) %>% 
+  filter(cell == "Cell") %>% 
+  select(months, years, cell_share)
+
+call_cell
+
+
+
+```
+
+
+Success! Again, let's take a look at what we did. We made our new column labels, grouped by month, year and phone type, got the totals, then notice we `ungroup()` (because our final calculation depends upon the sum of our phone types so we need to remove it from our grouping variables), re-group by our date variables, calcualte our cell phone share, then we use the `filter()` command to select *rows* base don some criteria, in this case for cell users and then finally we used the `select()` command to choose the final set of *columns* we wanted.
+
+##Wooh...
+
+Alright, so we did a lot here to try and showcase some of the benefits of a tidyverse approach to attacking some common data anlytical problems. We imported 5 excel sheets, bound them together, modified our dates and calculated a series of summary tables to get an idea about patterns we've seen in emergency calls the past couple of years.
+
+[^1]: This set of commands also showcases one of R's unique attributes-- vectorization. R is designed to read vectors so we do not have to set up any explicit loops for R to look inside any particular vector, find a value, and then assign a new value based on some condition. This saves us a lot of typing, keeps our code more readable and also highlights a particulr R *style* of coding. Often we can speed up our code, and make it more readable, by remembering to vectorize it. 

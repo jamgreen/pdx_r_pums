@@ -15,7 +15,7 @@ description: 'Dates, times and summary stats, oh my!'
 <div id="the-data" class="section level2">
 <h2>The Data</h2>
 <p>This is emergency call data from the <a href="https://www.portlandoregon.gov/cbo/">Budget Office of the City of Portland</a>. It has only five columsn but nearly 1.4 million rows as it has nearly 3 years of call data. Like many datasets, this data comes in an especially hefty 45MB excel file and is spread over four sheets (download <a href="%22Master%20Data_thru_June_Nick%20Kobel.xlsx%22">here</a>).</p>
-<p>Fortunately, the data is pretty well formatted already so we do not have to do extensive cleaning, but we still need to make sure our dates are in the proper format and our variables are of the proper types. Once that is done, we would like to calculate a series of summary statistics (by increasing difficulty/complexity): the total number of emergency calls; the number of emergency calls by year; the number of calls by month, by year; and the the proportion of calls by cell phone or landline by year.</p>
+<p>Fortunately, the data is pretty well formatted already so we do not have to do extensive cleaning, but we still need to make sure our dates are in the proper format and our variables are of the proper types. Once that is done, we would like to calculate a series of summary statistics (by increasing difficulty/complexity): the total number of emergency calls by month; the number of calls by month, by year; and the proportion of calls by cell phone or landline by year.</p>
 <p>We will be making primarily use of the <strong>lubridate</strong> and <strong>dplyr</strong> packages for cleaning and summarizing and the <strong>rio</strong> package for importing our sheets (I’ll also be using the <strong>here</strong> package for easier calling of files, but it is not strictly necessary).</p>
 <div id="import" class="section level3">
 <h3>Import</h3>
@@ -27,6 +27,7 @@ boecxls1 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.x
 boecxls2 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.xlsx&quot;), which = 2, na = c(&quot;&quot;, &quot;NULL&quot;)) 
 boecxls3 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.xlsx&quot;), which = 3, na = c(&quot;&quot;, &quot;NULL&quot;)) 
 boecxls4 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.xlsx&quot;), which = 4, na = c(&quot;&quot;, &quot;NULL&quot;)) 
+boecxls5 &lt;- import(here::here(&quot;static/Master Data_thru_June_Nick Kobel.xlsx&quot;), which = 5, na = c(&quot;&quot;, &quot;NULL&quot;)) 
 
 boecxls &lt;- bind_rows(boecxls1, boecxls2, boecxls3, boecxls4)
 
@@ -41,4 +42,184 @@ glimpse(boecxls)</code></pre>
 <p>Don’t worry too much over that beginning set of commands. That’s a little convenience snippet I have to call <strong>pacman</strong> a package management package. It’s p_load() function checks to see if a package is installed and to load it.</p>
 <p>So, we know our workbook has four sheets, the first with nearly 2 years of calls and the next three broken down monthly. In my import calls I’m pulling in each individual sheet (this should look familiar), but I’ve added a new call in the functon– the “na” argument. This is an argument that allows us to declare what values present in the sheet stand for NULLs. In this case, I said that blank cells &quot; &quot; and the string “NULL” all signify <code>NA</code>. This will help prevent any weird conversion issues from that NULl issue I mentioned above. And because the column positions and names are consistent across the sheets I use <strong>dplyr’s</strong> <code>bind_rows()</code> function to stick everything together making one tall table of calls. Finally, I use the <code>glimpse</code> function from <strong>dplyr</strong> again to get a basic idea of the columns in my data frame look like.</p>
 </div>
+<div id="a-brief-foray-into-dates" class="section level3">
+<h3>A brief foray into dates</h3>
+<p>Alright, we have our dataset loaded up and combined into one large data frame. But note that the first column, the date/timestamp of the call, is not necessarily consistent for all observations. We will convert that column into a true date/time variable with the date in year-month-day format and the time going down to the seconds mark.</p>
+<p><strong>Lubridate</strong> offers a series of convient functions for working with dates. In this case, all we are looking to is looking to take rather detailed timestamp data and simply add some categorical columns for making easier summary stats and visualizations. While we don’t have to convert our already decently formatted dates, this example will showcase of the legibility of <strong>lubridate’s</strong> functions and we’ll see some of the first chaining of commands using the <code>%&gt;%</code> operator.</p>
+<p>Some of the workhorse functions of lubridate are explicitly designed to set date/time columns in specific ways. Let’s add some basic seasons going by month name. Our approach will be to make a new month column followed by a season column where we will assign season based on our month name. Now this may be a bit redundant but this will allow us to follow the logic all the way through as well as introduce us to some new operators and functions.</p>
+<pre class="r"><code>#create some seasons vectors
+
+winter &lt;- c(&quot;Dec&quot;, &quot;Jan&quot;, &quot;Feb&quot;)
+
+spring &lt;- c(&quot;Mar&quot;, &quot;Apr&quot;, &quot;May&quot;)
+
+summer &lt;- c(&quot;Jun&quot;, &quot;Jul&quot;, &quot;Aug&quot;)
+
+autumn &lt;- c(&quot;Sep&quot;, &quot;Oct&quot;, &quot;Nov&quot;)
+
+#create new column called month with our month names and season column 
+
+boecxls &lt;- boecxls %&gt;% 
+  mutate(months = month(call_start_dt, label = TRUE),
+         season = case_when(months %in% winter ~ &quot;Winter&quot;,
+                            months %in% spring ~ &quot;Spring&quot;,
+                            months %in% summer ~ &quot;Summer&quot;,
+                            months %in% autumn ~ &quot;Autumn&quot;))
+
+glimpse(boecxls)</code></pre>
+<pre><code>## Observations: 1,338,045
+## Variables: 7
+## $ call_start_dt &lt;dttm&gt; 2016-12-01 00:00:32, 2016-12-01 00:00:56, 2016-...
+## $ answer_wait   &lt;dbl&gt; 1, 2, 2, 19, 18, 1, 5, 1, 1, 17, 7, 17, 16, 0, 2...
+## $ talk_time     &lt;dbl&gt; 77, 32, 129, 11, 190, 90, 28, 0, 0, 24, 45, 90, ...
+## $ group_name    &lt;chr&gt; &quot;ACD 10 DIGIT NON-EMER&quot;, &quot;ACD 10 DIGIT NON-EMER&quot;...
+## $ cell          &lt;dbl&gt; 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, ...
+## $ months        &lt;ord&gt; Dec, Dec, Dec, Dec, Dec, Dec, Dec, Dec, Dec, Dec...
+## $ season        &lt;chr&gt; &quot;Winter&quot;, &quot;Winter&quot;, &quot;Winter&quot;, &quot;Winter&quot;, &quot;Winter&quot;...</code></pre>
+<p>Okay, let’s break down what we did because there are a lot of new things here. The logic, as mentioned above, is that we define four vectors for our seasons and assign the month abbreviates to them. Remember the <code>c()</code> function allows us to declare vectors. So we start the meat of our call by starting with typing out our data frame object and feeding it into our pipe operator. This tells R to take the data frame and prepare to apply some function to it. Next we run into our one of primary <strong>dplyr</strong> functions <code>mutate()</code>. Mutate is used to make <strong>new columns</strong> in data frames in the form <code>mutate(&lt;dataframe&gt;, &lt;new column name&gt; = &lt;expression&gt;)</code>, of course, if you pipe your data frame in you do not need to explicitly call the data frame within mutate. Our first mutate is to create a column called months and we use the <code>month()</code> function from <strong>lubridate</strong> on our original date column and we want the months to be in their text form, not numeric.</p>
+<p>The second column we’re making, season, uses two new functions, <code>case_when()</code> and <code>%in%</code>. <code>case when</code> is a function designed run a series of conditional statements (in this case, a more readable version of a bunch of nested ifelse() statements). The <code>%in%</code> operator tells R to look inside a vector and to see if a particular value is found. In this case, we tell R to search the months column and if any of those values match what we have in our season columns then assign it it’s appropriate season. In this case, combining <code>case_when</code> with <code>%in%</code> allows us to create a relatively complicated conditional statement into a simple, readable statement.<a href="#fn1" class="footnoteRef" id="fnref1"><sup>1</sup></a></p>
+</div>
+</div>
+<div id="getting-some-summary-stats" class="section level2">
+<h2>Getting some summary stats</h2>
+<p>Okay, we have some basic labels and we think we’re ready to run some numbers. This will introduce the <code>group_by()</code> and <code>summarise()</code> functions from dplyr. Let’s try it out.</p>
+<pre class="r"><code>calls_by_month &lt;- boecxls %&gt;% group_by(months) %&gt;% summarise(n = n())
+
+calls_by_month</code></pre>
+<pre><code>## # A tibble: 12 x 2
+##    months      n
+##    &lt;ord&gt;   &lt;int&gt;
+##  1 Jan    143299
+##  2 Feb    129050
+##  3 Mar    147297
+##  4 Apr    145524
+##  5 May    160957
+##  6 Jun     76900
+##  7 Jul     83162
+##  8 Aug     82531
+##  9 Sep     77004
+## 10 Oct     75352
+## 11 Nov     71737
+## 12 Dec    145232</code></pre>
+<pre class="r"><code>calls_by_month2 &lt;- boecxls %&gt;% group_by(months) %&gt;% tally()
+
+calls_by_month2</code></pre>
+<pre><code>## # A tibble: 12 x 2
+##    months      n
+##    &lt;ord&gt;   &lt;int&gt;
+##  1 Jan    143299
+##  2 Feb    129050
+##  3 Mar    147297
+##  4 Apr    145524
+##  5 May    160957
+##  6 Jun     76900
+##  7 Jul     83162
+##  8 Aug     82531
+##  9 Sep     77004
+## 10 Oct     75352
+## 11 Nov     71737
+## 12 Dec    145232</code></pre>
+<pre class="r"><code>all.equal(calls_by_month, calls_by_month2)</code></pre>
+<pre><code>## [1] TRUE</code></pre>
+<p>Our first question, looking at calls per month (yes, I know we have to worry about the year, we’ll get to it) shows two ways to approach it. But before going into the call, look at what our calls return. Notice that <strong>dplyr</strong> always returns a data frame. This is one of the guiding prinicples of the tidyverse, every function should return only one kind of object. So, <strong>dplyr</strong> will always return a data frame even if your answer is only a single column or even a single value. Back to the call…now we’re making a new object that we assign our calls_by_month name to where take our original data frame, pipe it to <code>group_by()</code> that tells <strong>dplyr</strong> to group our variables by some other variable, and then <code>summarise()</code> will collapse our data frame to our grouping variables and return our answer. Note that <code>summarise()</code> reduces the number of rows to the number of variables we <code>group_by()</code> as opposed to mutate that made a column on our original data frame. Finally, in our first summarise call we use the <code>n()</code> function to get a count of rows and in the second call we use the <code>tally()</code> function which is a convenience function for the very common <code>summarise(n = n())</code> command we use. You’ll notice that the two resulting data frames are identical to each other.</p>
+<p>Let’s make it a bit more complicated and group by month and year. We forgot to make an additional year column, though! No fear, thanks to lubridate, we should be able to bring out the year value and group on it along with our month value. Let’s try it out.</p>
+<pre class="r"><code>call_month_year &lt;- boecxls %&gt;% 
+  group_by(year(call_start_dt), months) %&gt;% 
+  tally() 
+
+call_month_year</code></pre>
+<pre><code>## # A tibble: 18 x 3
+## # Groups:   year(call_start_dt) [?]
+##    `year(call_start_dt)` months     n
+##                    &lt;dbl&gt; &lt;ord&gt;  &lt;int&gt;
+##  1                  2016 Dec    70081
+##  2                  2017 Jan    70578
+##  3                  2017 Feb    62318
+##  4                  2017 Mar    71351
+##  5                  2017 Apr    71060
+##  6                  2017 May    78011
+##  7                  2017 Jun    76900
+##  8                  2017 Jul    83162
+##  9                  2017 Aug    82531
+## 10                  2017 Sep    77004
+## 11                  2017 Oct    75352
+## 12                  2017 Nov    71737
+## 13                  2017 Dec    75151
+## 14                  2018 Jan    72721
+## 15                  2018 Feb    66732
+## 16                  2018 Mar    75946
+## 17                  2018 Apr    74464
+## 18                  2018 May    82946</code></pre>
+<pre class="r"><code>call_month_year &lt;- call_month_year %&gt;% 
+  rename(year = `year(call_start_dt)`)
+
+call_month_year</code></pre>
+<pre><code>## # A tibble: 18 x 3
+## # Groups:   year [3]
+##     year months     n
+##    &lt;dbl&gt; &lt;ord&gt;  &lt;int&gt;
+##  1  2016 Dec    70081
+##  2  2017 Jan    70578
+##  3  2017 Feb    62318
+##  4  2017 Mar    71351
+##  5  2017 Apr    71060
+##  6  2017 May    78011
+##  7  2017 Jun    76900
+##  8  2017 Jul    83162
+##  9  2017 Aug    82531
+## 10  2017 Sep    77004
+## 11  2017 Oct    75352
+## 12  2017 Nov    71737
+## 13  2017 Dec    75151
+## 14  2018 Jan    72721
+## 15  2018 Feb    66732
+## 16  2018 Mar    75946
+## 17  2018 Apr    74464
+## 18  2018 May    82946</code></pre>
+<p>We were still able to group by year using the lubridate year function in the grouping call! This is pretty cool (even though we have a terrible label) that allows us to get a really quick and dirty calculation even when we forget, or choose not, to create a new column. But this is easily fixed using the <code>rename()</code> function and now we have a perfectly good summary data frame. Now, let’s add one more value to it, the proportion of calls by cell phone and landline and then we can start visualizing this.</p>
+<p>To get our final summary data frame we have to go back to our original table. We’ll recode our cell variable from numeric to a character variable,add a year variable, then calculate our proportions. Our final table should have the month, year and the proprtion of calls made cell phone <em>only</em>. And, as an added challenge, let’s see if we can do it in one call.</p>
+<pre class="r"><code>call_cell &lt;- boecxls %&gt;% 
+  mutate(years = year(call_start_dt),  
+         cell = if_else(cell == 1, &quot;Cell&quot;, &quot;Landline&quot;)) %&gt;% 
+  group_by(months, years, cell) %&gt;% 
+  summarise(tot_cell = n()) %&gt;%  ungroup() %&gt;% 
+  group_by(months, years) %&gt;% 
+  mutate(cell_share = tot_cell/sum(tot_cell)) %&gt;% 
+  filter(cell == &quot;Cell&quot;) %&gt;% 
+  select(months, years, cell_share)
+
+call_cell</code></pre>
+<pre><code>## # A tibble: 18 x 3
+## # Groups:   months, years [18]
+##    months years cell_share
+##    &lt;ord&gt;  &lt;dbl&gt;      &lt;dbl&gt;
+##  1 Jan     2017      0.314
+##  2 Jan     2018      0.344
+##  3 Feb     2017      0.323
+##  4 Feb     2018      0.348
+##  5 Mar     2017      0.331
+##  6 Mar     2018      0.353
+##  7 Apr     2017      0.335
+##  8 Apr     2018      0.354
+##  9 May     2017      0.361
+## 10 May     2018      0.368
+## 11 Jun     2017      0.375
+## 12 Jul     2017      0.360
+## 13 Aug     2017      0.356
+## 14 Sep     2017      0.345
+## 15 Oct     2017      0.333
+## 16 Nov     2017      0.341
+## 17 Dec     2016      0.357
+## 18 Dec     2017      0.359</code></pre>
+<p>Success! Again, let’s take a look at what we did. We made our new column labels, grouped by month, year and phone type, got the totals, then notice we <code>ungroup()</code> (because our final calculation depends upon the sum of our phone types so we need to remove it from our grouping variables), re-group by our date variables, calcualte our cell phone share, then we use the <code>filter()</code> command to select <em>rows</em> base don some criteria, in this case for cell users and then finally we used the <code>select()</code> command to choose the final set of <em>columns</em> we wanted.</p>
+</div>
+<div id="wooh" class="section level2">
+<h2>Wooh…</h2>
+<p>Alright, so we did a lot here to try and showcase some of the benefits of a tidyverse approach to attacking some common data anlytical problems. We imported 5 excel sheets, bound them together, modified our dates and calculated a series of summary tables to get an idea about patterns we’ve seen in emergency calls the past couple of years.</p>
+</div>
+<div class="footnotes">
+<hr />
+<ol>
+<li id="fn1"><p>This set of commands also showcases one of R’s unique attributes– vectorization. R is designed to read vectors so we do not have to set up any explicit loops for R to look inside any particular vector, find a value, and then assign a new value based on some condition. This saves us a lot of typing, keeps our code more readable and also highlights a particulr R <em>style</em> of coding. Often we can speed up our code, and make it more readable, by remembering to vectorize it.<a href="#fnref1">↩</a></p></li>
+</ol>
 </div>
