@@ -1,5 +1,5 @@
 ---
-title: A Tidyverse workflow
+title: A Tidyverse workflow (Part 1)
 author: Jamaal Green
 date: '2018-07-30'
 slug: a-tidyverse-workflow
