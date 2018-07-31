@@ -14,7 +14,7 @@ Thus far, we've worked with some smaller example datasets, but now we will be wo
 
 ##The Data
 
-This is emergency call data from the [Budget Office of the City of Portland](https://www.portlandoregon.gov/cbo/). It has only five columsn but nearly 1.4 million rows as it has nearly 3 years of call data. Like many datasets, this data comes in an especially hefty 45MB excel file and is spread over five sheets (download [here]("DataSetsforPSUWorkshop.xlsx")).
+This is emergency call data from the [Budget Office of the City of Portland](https://www.portlandoregon.gov/cbo/). It has only five columsn but nearly 1.4 million rows as it has nearly 3 years of call data. Like many datasets, this data comes in an especially hefty 45MB excel file and is spread over five sheets (download [here]("/static/DataSetsforPSUWorkshop.xlsx")).
 
 Fortunately, the data is pretty well formatted already so we do not have to do extensive cleaning, but we still need to make sure our dates are in the proper format and our variables are of the proper types. Once that is done, we would like to calculate a series of summary statistics (by increasing difficulty/complexity): the total number of emergency calls by month; the number of calls by month, by year; and the proportion of calls by cell phone or landline by year.
 
