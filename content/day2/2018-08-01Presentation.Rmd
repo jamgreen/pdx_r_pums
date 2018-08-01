@@ -1,0 +1,525 @@
+---
+title: "Walking through PUMS, survey and survyr"
+author: "Nick Chun"
+date: 2018-01-08
+output:
+  slidy_presentation: default
+  ioslides_presentation: default
+  beamer_presentation: default
+---
+<style>
+.small-code pre code {
+  font-size: 1em;
+}
+</style>
+
+About Me
+========================================================
+- Demographer at PSU
+- Oregon Population Forecast Program
+- Intermediate User of R and PUMS
+
+What is PUMS?
+========================================================
+
+- Public Use Microdata Sample (PUMS)
+- Results from [ACS](https://www2.census.gov/programs-surveys/acs/methodology/questionnaires/2018/quest18.pdf) respondents
+- Contains person-level and housing-level characteristics
+- Data aggregated to Public Use Microdata Areas (PUMA)
+  - Contains at least 100,000 people
+  - Built from Census Tracts, but does not necessarily nest within Counties
+
+Portland MSA
+========================================
+```{r echo=F, message=FALSE, warning=F, message=F}
+#MSA Counties----
+if(!require(pacman)){install.packages("pacman");library(pacman)}
+p_load(tidycensus,sf,tidyverse,rgdal,tigris,sqldf,devtools,tmap,tmaptools,ggmap,corrplot,knitr,stargazer,survey,data.table,
+       tseries,forecast,lubridate)
+
+#install_github("jamgreen/lehdr")
+#library(lehdr)
+options(tigris_class = "sf",tigris_use_cache = T)
+options(stringsAsFactors = T)
+options(dplyr.width = Inf)
+options(survey.replicates.mse = T)
+options(scipen = 999)
+options(datatable.fread.datatable=F)
+rm(list=ls())
+puma<-rbind(pumas("OR"),pumas("WA"))
+msa<-rbind(counties("OR") %>% filter(grepl("005|009|051|067|071",COUNTYFP)),counties("WA") %>% filter(grepl("011|059",COUNTYFP)))
+puma_msa<-st_join(puma,msa %>% select(NAME),left=F) %>% filter(!grepl("4100200|4101105|5311200|5310902|4100500|5311000",GEOID10))
+
+tm_shape(msa) + tm_polygons("NAME",title= "Porltand MSA")
+
+```
+
+Portland MSA PUMAs
+===============================
+```{r echo=F, warning=F,message=F}
+#MSA PUMA----
+tm_shape(
+st_centroid(puma_msa) %>% st_join(msa,join=st_within) %>% as.data.frame(.) %>% select(-geometry) %>% right_join(puma_msa %>% select(PUMACE10),.,) %>% mutate(NAME.y= ifelse(is.na(NAME.y),"Yamhill & Polk",NAME.y)))+tm_polygons("NAME.y", title= "Portland MSA PUMAs")
+```
+
+
+PUMS comparison to ACS
+========================================================
+- 1 and 5 year tables
+- ACS tables are summaries of PUMS data
+  - PUMS data have a smaller sample size: 1% vs ~1.5%
+- Anonymized
+- Uses
+    - Custom Tables
+    - Sample Weights
+    - Modeling
+  
+Example: Number of Children (<1) by Household Size and Ethnicity For the Tri-County area
+========================================================
+```{r include =F}
+or_h <- fread("ss16hor.csv",colClasses = c("SERIALNO"="character","PUMA"="character","ST"="character"))
+
+colnames(or_h)<-tolower(colnames(or_h))
+or_p<-fread("ss16por.csv",colClasses = c("SERIALNO"="character","PUMA"="character", "MIGSP"="character", "ST"="character"))
+colnames(or_p)<-tolower(colnames(or_p))
+or_pums<-or_p %>% left_join(or_h, by="serialno", suffix=c("_p","_h"))
+
+tri_filter<-puma_msa %>% filter(grepl("Portland|Multnomah|Clackamas|Washington",NAMELSAD10)) %>% as.data.frame(.) %>% select(PUMACE10,-geometry)
+
+
+query<-or_pums %>% mutate(hisp_boolean= case_when(hisp>1 & agep==0~ "Hispanic", TRUE~ "Not Hispanic")) %>%
+  group_by(serialno) %>% mutate(ncount=n()) %>% ungroup() %>% 
+  mutate(hh_n = case_when(ncount>4~"hh size >4", TRUE ~ "hh size <=4"))%>%
+  filter(grepl(paste(tri_filter$PUMACE10,collapse = "|"),puma_p), agep==0,type==1)
+
+x<-svrepdesign(weights= ~pwgtp,
+               repweights = 'pwgtp[0-9]+',
+               scale=4/80,
+               rscales = ncol('pwgtp[0-9]+'),
+               mse=T,
+               combined.weights = T,
+               type='JK1',
+               data= query)
+
+output<-svyby(~hisp_boolean,~hh_n,x,svytotal,na.rm=T)
+
+output<- output %>% as.data.frame(.) %>% 
+  rename(Hispanic=hisp_booleanHispanic,`Not Hispanic`=`hisp_booleanNot Hispanic`,hisp_se=se1,n_hisp_se=se2)
+rownames(output)<-1:2
+
+output<-cbind(output %>% select(1:3) %>% gather(hisp_class,estimate,2:3),output %>% select(1,4,5) %>% gather(hisp_class,se,2:3)%>% select(3)) %>% mutate(cv=round(se/estimate,2),moe=round(se*1.645,1))  %>% group_by(hisp_class) %>% mutate(total=sum(estimate),total_moe= round(moe_sum(moe,estimate),1)) %>% ungroup() %>% mutate(share=round(100*estimate/total,1), share_moe= round(100*moe_prop(estimate,total,moe,total_moe),1), share_cv=round(share_moe/share,2)) %>% 
+  select(hisp_class,hh_n,estimate,moe,share,share_moe,cv,share_cv)%>% arrange(hisp_class,hh_n)
+
+```
+
+```{r echo= F}
+kable(output)
+```
+
+Example: Code (Design)
+========================================================
+
+```{r eval}
+query<-or_pums %>% mutate(hisp_boolean= case_when(hisp>1 & agep==0~ "Hispanic", TRUE~ "Not Hispanic")) %>%
+  group_by(serialno) %>% mutate(ncount=n()) %>% ungroup() %>% 
+  mutate(hh_n = case_when(ncount>4~"hh size >4", TRUE ~ "hh size <=4"))%>%
+  filter(grepl(paste(tri_filter$PUMACE10,collapse = "|"),puma_p), agep==0,type==1)
+
+x<-svrepdesign(weights= ~pwgtp,
+               repweights = 'pwgtp[0-9]+',
+               scale=4/80,
+               rscales = ncol('pwgtp[0-9]+'),
+               mse=T,
+               combined.weights = T,
+               type='JK1',
+               data= query)
+
+output<-svyby(~hisp_boolean,~hh_n,x,svytotal,na.rm=T)
+```
+
+Example: Code (Clean Up & Output)
+========================================================
+```{r}
+output<- output %>% as.data.frame(.) %>% 
+  rename(Hispanic=hisp_booleanHispanic,`Not Hispanic`=`hisp_booleanNot Hispanic`,hisp_se=se1,n_hisp_se=se2)
+rownames(output)<-1:2
+
+output<-cbind(output %>% select(1:3) %>% gather(hisp_class,estimate,2:3),
+              output %>% select(1,4,5) %>% gather(hisp_class,se,2:3)%>% 
+                select(3)) %>% 
+  mutate(cv=round(se/estimate,2),moe=round(se*1.645,1)) %>%
+  group_by(hisp_class) %>% 
+  mutate(total=sum(estimate),total_moe=round(moe_sum(moe,estimate),1)) %>%
+  ungroup() %>% 
+  mutate(share=round(100*estimate/total,1), share_moe=round(100*moe_prop(estimate,total,moe,total_moe),1), share_cv=round(share_moe/share,2)) %>% 
+  select(hisp_class,hh_n,estimate,moe,share,share_moe,cv,share_cv)%>% arrange(hisp_class,hh_n)
+
+```
+<font size = "4px">
+```{r echo=F}
+kable(output)
+```
+</font>
+
+Downloading PUMS Data
+=======================================================
+<font size = "5px">
+- [IPUMS](https://www.ipums.org)
+
+- Download person and housing tables by state from the [Census](https://www.census.gov/programs-surveys/acs/data/pums.html)
+
+```{r}
+if(!require(pacman)){install.packages("pacman");library(pacman)}
+p_load(tidyverse,data.table,survey,srvyr)
+
+
+#String Variables are brought in as factors
+options(stringsAsFactors = T)
+#Variances are centered around the estimate rather than the mean of the replicate weights
+options(survey.replicates.mse = T)
+#Remove Scientific Notation
+options(scipen = 999)
+#Number of printed digits
+options(digits = 2)
+#fread creates data.frames instead of data.tables
+options(datatable.fread.datatable=F)
+#Clear environment
+rm(list=ls())
+```
+</font>
+
+Downloading PUMS Data (Continued)
+========================================================
+<font size = "5px">
+```{r}
+#Set Working Directory
+
+#Read Oregon 2016 1 yr housing unit records
+or_h <- fread("ss16hor.csv",colClasses = c("SERIALNO"="character","PUMA"="character","ST"="character"))
+
+#Conver column names to lower case
+colnames(or_h)<-tolower(colnames(or_h))
+
+#Read person level records and convert column names to lower case
+or_p<-fread("ss16por.csv",colClasses = c("SERIALNO"="character","PUMA"="character", "MIGSP"="character", "ST"="character"))
+colnames(or_p)<-tolower(colnames(or_p))
+```
+
+[Technical Documentation](https://www.census.gov/programs-surveys/acs/technical-documentation/pums/documentation.html):
+
+- Data Dictionary: Detailed information about the attributes
+
+- Estimates for User Verification: Check your results against these numbers to make sure you are calculating the estimates and sampling error correctly.
+</font>
+
+PUMS Table Structure (Housing Unit)
+=========================================================
+<font size = "5px">
+
+Primary Key: serialno (housing unit id)
+
+Household Weight: wgtp
+
+ten: owned (1 & 2), rented(3 &4), gq/vacant (n/a)
+
+noc: number of own children in household
+
+hincp: household income
+
+grpip: gross rent as percentage of hh income
+
+ocpip: owner housing costs as percentage of hh income
+
+```{r}
+kable(or_h[1:5,] %>% select(serialno,puma,ten,noc,hincp,grpip,ocpip,wgtp))
+```
+</font>
+
+
+PUMS Table Structure (Person)
+=========================================================
+<font size = "5px">
+
+Primary Key: serialno (housing unit id) & sporder (person number)
+
+Person Weight: pwgtp
+
+sex: Male (1) and Female (2)
+
+rac1p: Race code
+
+hisp: Hispanic origin
+
+hicov: with health insurance (1) and without health insurance (2)
+
+migsp: state or country code one migrated from 1 year ago.
+
+```{r}
+kable(or_p[1:5,] %>% select(serialno,sporder,puma,pwgtp,agep,sex,rac1p,hisp,hicov,migsp))
+```
+</font>
+
+PUMS Table Structure (Replicate Weights)
+========================================================
+<font size = "5px">
+
+- 80 weights used to create standard error estimates
+
+- Painful to work with
+
+- Necessary for custom tabulations
+
+```{r}
+#Combine person and housing unit tables
+or_pums<-or_p %>% left_join(or_h, by="serialno", suffix=c("_p","_h"))
+kable(or_pums %>% select(serialno,sporder,pwgtp,wgtp,pwgtp1,pwgtp2,wgtp1,wgtp2) %>% .[1:5,])
+
+```
+</font>
+
+Cost Burdened Households by Race & Ethnicity
+========================================================
+<font size = "6px">
+Create (*mutate*) race & ethnicity and cost burdened field using *case_when*
+```{r}
+#Add Race & Ethnicity and Cost Burdened Fields
+or_pums<-or_pums%>%mutate(hisp_boolean= if_else(hisp==1,0,1),
+                          race_hisp=factor(case_when(rac1p==1& hisp_boolean==0~"wa",
+                                                 rac1p==2 & hisp_boolean==0~"black",
+                                                 c(rac1p==3|rac1p==4|rac1p==5)& hisp_boolean==0~"ai_an",
+                                                 rac1p==6& hisp_boolean==0~"asian",
+                                                 rac1p==7& hisp_boolean==0~"nh_pi",
+                                                 rac1p==8& hisp_boolean==0~"other",
+                                                 rac1p==9& hisp_boolean==0~"multi",
+                                                 hisp_boolean==1~"hisp"),
+                                       levels=c("wa","black","ai_an","asian","nh_pi","other","multi","hisp")), burden=factor(case_when(ocpip>=30|grpip>=30~ "burdened", TRUE ~ "not burdened")))
+
+```
+</font>
+
+Check Results
+========================================================
+<font size = "6px">
+```{r}
+#Check Results
+kable(or_pums %>% select(race_hisp,rac1p,hisp_boolean,burden,ocpip,grpip) %>% sample_n(.,10))
+```
+</font>
+
+
+Survey Package (Set Survey Design: Person)
+========================================================
+<font size = "6px">
+```{r }
+#person-level survey design
+p_design<-svrepdesign(weights= ~pwgtp,
+               repweights = 'pwgtp[0-9]+',
+               scale=4/80,
+               rscales = ncol('pwgtp[0-9]+'),
+               mse=T,
+               combined.weights = T,
+               type='JK1',
+               data= or_pums)
+
+```
+</font>
+
+Survey Package (Set Survey Design: Housing Unit)
+========================================================
+<font size = "6px">
+```{r}
+#join race & ethnicity and cost burdened fields to housing unit table
+h_join<-left_join(or_h, or_pums %>% filter(sporder==1) %>% select(serialno,race_hisp,burden),by="serialno")
+
+#housing unit-level survey design
+h_design<-svrepdesign(weights= ~wgtp,
+               repweights = 'wgtp[0-9]+',
+               scale=4/80,
+               rscales = ncol('wgtp[0-9]+'),
+               mse=T,
+               combined.weights = T,
+               type='JK1',
+               data= h_join)
+```
+</font>
+
+Joining Person and Housing Unit Tables: WARNING
+=========================================================
+<font size = "5px">
+Filtering the Person table to only include the householder (sporder ==1) will remove duplicate household estimates
+```{r}
+kable(or_pums[1:10,] %>% select(serialno,sporder,hincp) %>% filter(sporder==1))
+kable(or_h[1:5,] %>% select(serialno,hincp))
+```
+However, the total number of cases will be different because vacant units and group quarters are missing
+```{r}
+nrow(or_p %>% filter(sporder==1))
+nrow(or_h)
+```
+</font>
+
+
+Joining Person and Housing Unit Tables: WARNING (Continued)
+=========================================================
+<font size = "6px">
+The estimates will be the same, but the standard errors will be inflated for the filtered person table (sporder==1)
+</font>
+```{r, include = F}
+h_design_scratch<-svrepdesign(weights= ~wgtp,
+               repweights = 'wgtp[0-9]+',
+               scale=4/80,
+               rscales = ncol('wgtp[0-9]+'),
+               mse=T,
+               combined.weights = T,
+               type='JK1',
+               data= or_h)
+hu_result<-svytotal(~as.factor(ten),h_design_scratch,na.rm=T)
+
+pfilter_design<-svrepdesign(weights= ~wgtp,
+               repweights = 'wgtp[0-9]+',
+               scale=4/80,
+               rscales = ncol('wgtp[0-9]+'),
+               mse=T,
+               combined.weights = T,
+               type='JK1',
+               data= or_pums %>% filter(sporder==1))
+pfilter_result<-svytotal(~as.factor(ten),pfilter_design,na.rm=T)
+
+```
+
+```{r}
+# Households by Tenure: Housing Unit Results
+kable(hu_result)
+```
+```{r}
+#Households by Tenure: Filtered Person Table Results
+kable(pfilter_result)
+```
+
+Survey Package (Calibrate Model)
+========================================================
+Calibrate Survey Design to known estimates (User Verification)
+```{r}
+#Calculate total of vector "sex" from survey replicate design "p_design" and drop missing/null cases
+kable(svytotal(~as.factor(sex),p_design,na.rm=T))
+```
+```{r}
+kable(svytotal(~as.factor(ten),h_design,na.rm=T))
+```
+
+Survey Package (Examples)
+========================================================
+```{r}
+# Population by Race and Ethnicity
+kable(svytotal(~race_hisp,p_design,na.rm=T))
+
+# Household Count by Race and Ethnicity of the Householder
+kable(svytotal(~race_hisp,h_design,na.rm=T))
+
+```
+
+Survey Package (Calculate Cost Burdened HH by Race & Ethnicity)
+========================================================
+<font size = "6px">
+```{r}
+#Cost Burdened Households by Race & Ethnicity
+kable(svyby(~burden,~race_hisp,h_design,svytotal,na.rm=T) %>% as.data.frame(.) %>% 
+        rename(burdened=burdenburdened,notburdened=`burdennot burdened`,burdened_se=se1,notburdened_se=se2) %>%
+        select(race_hisp,burdened,burdened_se,notburdened, notburdened_se))
+
+```
+</font>
+
+Survey Package (Household Income by Race & Ethnicity)
+========================================================
+<font size = "5px">
+```{r}
+#Median Household Income for Oregon
+kable(svyquantile(~hincp,h_design,quantiles=.5,na.rm=T) %>% as.data.frame(.))
+#Median Household Income by Race & Ethnicity for Oregon
+kable(svyby(~hincp,~race_hisp,h_design,svyquantile,quantiles=.5,na.rm=T) %>% as.data.frame(.) %>% rename(HH_inc=V1))
+```
+</font>
+
+Survey Package (Regression)
+========================================================
+```{r, include=F}
+library(stargazer)
+```
+```{r, warning=F}
+# Household Income regressed on Race & Ethnicity of Householder
+model<-svyglm(hincp ~ race_hisp ,h_design)
+stargazer(model, type="text")
+1-model$deviance/model$null.deviance
+
+```
+
+
+survey vs srvyr package (workflow using survey)
+========================================================
+<font size = "6px">
+```{r, warning=F, message=F}
+#Design
+h_design<-svrepdesign(weights= ~wgtp,
+               repweights = 'wgtp[0-9]+',
+               scale=4/80,
+               rscales = ncol('wgtp[0-9]+'),
+               mse=T,
+               combined.weights = T,
+               type='JK1',
+               data= h_join)
+
+# Calculate Burdened and Not Burdened Households by Race & Ethnicity (Survey Package)
+data_survey<-svyby(~burden,~race_hisp,h_design,svytotal,na.rm=T) %>% as.data.frame(.) %>%
+ rename(burdened=burdenburdened,notburdened=`burdennot burdened`,burdened_se=se1,notburdened_se=se2) %>% 
+  select(race_hisp,burdened,burdened_se,notburdened, notburdened_se)
+
+# Transform to Long Form
+survey_output<- cbind(data_survey %>% select(race_hisp,burdened,notburdened) %>% gather(.,burden_class,estimate,2:3),
+data_survey %>% select(race_hisp,burdened_se,notburdened_se) %>% gather(.,burden_class,se,2:3) %>% select(-1,-2)) %>% 
+  select(burden_class, race_hisp, estimate,se) %>% arrange(race_hisp,burden_class)
+
+```
+</font>
+
+survey vs srvyr package (workflow using survey continued)
+========================================================
+```{r}
+kable(survey_output)
+```
+
+survey vs srvyr package (workflow using srvry)
+========================================================
+<font size = "6px">
+```{r}
+# design
+h_design2<- h_join %>% as_survey_rep(weights=wgtp,
+                                  repweights=starts_with("wgtp"),
+                                  combined_weights=T,
+                                  type="JK1",
+                                  scale=4/80,
+                                  rscales=ncol('wgtp[0-9]+'))
+
+# Calculate Burdened and Not Burdened Households by Race & Ethnicity(srvyr Package)
+kable(h_design2 %>% group_by(burden,race_hisp) %>% summarise(hh=survey_total(,na.rm=T)) %>% arrange(race_hisp,burden))
+
+```
+</font>
+
+MHI by Cost Burden and Race & Ethnicity (srvyr)
+=======================================================
+<font size = "6px">
+```{r}
+kable(h_design2 %>% group_by(burden,race_hisp) %>% summarise(hh=survey_total(,na.rm=T),MHI=survey_median(hincp,na.rm=T,vartype="se")) %>% 
+  #Create Total Households by Race & Ethnicity
+  group_by(race_hisp)%>% mutate(total=sum(hh),total_se=moe_sum(hh_se,hh)) %>%
+  #Ungroup and calculate shares and sampling error
+  ungroup() %>% mutate(MHI_cv= 100*MHI_q50_se/MHI_q50,
+                       hh_share= 100*hh/total,
+                    hh_share_se= 100*moe_prop(hh,total,hh_se,total_se)) %>%
+  #remove hh fields and arrange by Race & Ethnicity and Burden
+  select(-total,-total_se,-hh,-hh_se) %>% arrange(race_hisp,burden)
+)
+                                                                                                   
+```
+</font>
